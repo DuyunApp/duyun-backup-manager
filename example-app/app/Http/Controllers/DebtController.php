@@ -37,11 +37,13 @@ class DebtController extends Controller
         // ✅ تنفيذ النسخ الاحتياطي
         $path = BackupManager::for(Debt::class)
             ->filters($filters)
-            ->columns(['id', 'amount', "title", 'created_at'])
+            ->with("user")
+            ->attr('user.name')
+            ->columns(['id', 'amount', "title", "user_id", 'created_at'])
             ->disk('public') // يمكن تغييره إلى s3 أو local
             ->directory('user-backups/' . date('Y'))
             ->fileName('debt-report-' . $validated['user_id'] . '-' . now()->format('Ymd_His') . '.xlsx')
-            // ->deleteAfterBackup(true)
+            ->deleteAfterBackup(true)
             ->run();
         if (!$path) {
             return response()->json([

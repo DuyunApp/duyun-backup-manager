@@ -8,6 +8,8 @@ class ModelExporter
     protected array $filters = [];
     protected array $columns = ['*'];
     protected array $with = [];
+    protected array $attrs = [];
+
 
     public static function for(string $modelClass): self
     {
@@ -37,8 +39,32 @@ class ModelExporter
         }
         return $this;
     }
+    public function attr(array|string $attr): self
+    {
+        if (is_array($attr)) {
+            $this->attrs = $attr;
+        } else {
+            $this->attrs[] = $attr;
+        }
+        return $this;
+    }
 
-  
+
+    private function dotMergeData(array $data, array $attrs): array
+    {
+        foreach ($data as &$record) {
+            foreach ($attrs as $v) {
+                $value = data_get($record, $v);
+                $parts = explode('.', $v);
+                $key = $parts[count($parts) - 2];
+                $record[$key] = $value;
+            }
+        }
+        unset($record);
+
+        return $data;
+    }
+
 
     /**
      * جلب البيانات وربما حذفها
@@ -49,6 +75,7 @@ class ModelExporter
 
         if (count($this->with) > 0) {
             $query->with($this->with);
+
         }
 
         foreach ($this->filters as $field => $condition) {
@@ -60,9 +87,13 @@ class ModelExporter
             }
         }
 
-        $records = $query->get($this->columns);
+        $records = $query->get($this->columns)->toArray();
 
-        // 🧹 إذا تم تفعيل الحذف بعد الجلب
-        return $records->toArray();
+        if (count($this->attrs) > 0) {
+            $records = $this->dotMergeData($records, $this->attrs);
+        }
+
+        return $records;
+
     }
 }

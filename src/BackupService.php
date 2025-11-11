@@ -18,13 +18,15 @@ class BackupService
     protected string $disk;
     protected string $directory;
     protected string $fileName = '';
+    protected array $with = [];
+    protected array $attrs = [];
     protected ?ExporterInterface $exporter = null;
+    protected bool $deleteAfterBackup = false;
 
     public function __construct()
     {
         $this->disk = config('duyun-backup.disk', 'local');
         $this->directory = config('duyun-backup.path', 'backups');
-        $this->deleteAfterBackup = config('duyun-backup.auto_delete', false);
     }
 
     public static function for(string $modelClass): self
@@ -37,6 +39,24 @@ class BackupService
     public function filters(array $filters): self
     {
         $this->filters = $filters;
+        return $this;
+    }
+    public function with(array|string $with): self
+    {
+        if (is_array($with)) {
+            $this->with = $with;
+        } else {
+            $this->with[] = $with;
+        }
+        return $this;
+    }
+    public function attr(array|string $attr): self
+    {
+        if (is_array($attr)) {
+            $this->attrs = $attr;
+        } else {
+            $this->attrs[] = $attr;
+        }
         return $this;
     }
 
@@ -55,6 +75,11 @@ class BackupService
     public function disk(string $disk): self
     {
         $this->disk = $disk;
+        return $this;
+    }
+    public function deleteAfterBackup(bool $deleteAfterBackup = false): self
+    {
+        $this->deleteAfterBackup = $deleteAfterBackup;
         return $this;
     }
 
@@ -81,6 +106,8 @@ class BackupService
 
             $modelExporter = ModelExporter::for($this->modelClass)
                 ->filters($this->filters)
+                ->with($this->with)
+                ->attr($this->attrs)
                 ->columns($this->columns);
 
             $exporter = $this->exporter ?? $this->resolveDefaultExporter();
@@ -102,13 +129,15 @@ class BackupService
             if (empty($data)) {
                 return false;
             }
-
+            // dd($data);
             $exporter->setData($data)->export($path);
 
-            $disk->put("delete/" . "d-" . rand(100, 9999) . ".json", json_encode([
-                "model" => $this->modelClass,
-                "ids" => array_column($data, 'id')
-            ]));
+            if ($this->deleteAfterBackup) {
+                $disk->put("delete/" . "d-" . rand(100, 9999) . ".json", json_encode([
+                    "model" => $this->modelClass,
+                    "ids" => array_column($data, 'id')
+                ]));
+            }
 
             return $path;
         });
