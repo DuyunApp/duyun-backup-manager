@@ -8,7 +8,6 @@ class ModelExporter
     protected array $filters = [];
     protected array $columns = ['*'];
     protected array $with = [];
-    protected bool $deleteAfterFetch = false;
 
     public static function for(string $modelClass): self
     {
@@ -39,14 +38,7 @@ class ModelExporter
         return $this;
     }
 
-    /**
-     * يحدد إن كان سيتم حذف السجلات بعد جلبها
-     */
-    public function deleteAfterFetch(bool $status = true): self
-    {
-        $this->deleteAfterFetch = $status;
-        return $this;
-    }
+  
 
     /**
      * جلب البيانات وربما حذفها
@@ -71,16 +63,6 @@ class ModelExporter
         $records = $query->get($this->columns);
 
         // 🧹 إذا تم تفعيل الحذف بعد الجلب
-        if ($this->deleteAfterFetch) {
-            if (empty($this->filters)) {
-                throw new \RuntimeException(
-                    '⚠️ من الخطر حذف جميع البيانات دون فلاتر. الرجاء تحديد فلاتر قبل التفعيل.'
-                );
-            }
-
-            ($this->modelClass)::whereIn('id', $records->pluck('id'))->delete();
-        }
-
         return $records->toArray();
     }
 }

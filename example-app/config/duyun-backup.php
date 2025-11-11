@@ -12,7 +12,7 @@ return [
     | مثل: local, public, s3, spaces, وغيرها.
     |
     */
-    'disk' => env('DUYUN_BACKUP_DISK', 'local'),
+    'disk' => env('DUYUN_BACKUP_DISK', 'public'),
 
     /*
     |--------------------------------------------------------------------------

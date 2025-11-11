@@ -447,7 +447,7 @@
             "dist": {
                 "type": "path",
                 "url": "..",
-                "reference": "a77cbb28f3b932ab2064c7861ba7ffe0706b9f54"
+                "reference": "1736cea88ac0a3a7da37088196265568da79a665"
             },
             "require": {
                 "laravel/framework": "^12.0",

@@ -17,7 +17,6 @@ class BackupService
     protected array $columns = ['*'];
     protected string $disk;
     protected string $directory;
-    protected bool $deleteAfterBackup;
     protected string $fileName = '';
     protected ?ExporterInterface $exporter = null;
 
@@ -65,11 +64,7 @@ class BackupService
         return $this;
     }
 
-    public function deleteAfterBackup(bool $status = true): self
-    {
-        $this->deleteAfterBackup = $status;
-        return $this;
-    }
+
 
     /**
      * تحديد نوع الـ Exporter المستخدم
@@ -82,7 +77,7 @@ class BackupService
 
     public function run(): string
     {
-        return DB::transaction(function () {
+        return DB::transaction(function (): bool|string {
 
             $modelExporter = ModelExporter::for($this->modelClass)
                 ->filters($this->filters)
@@ -97,6 +92,7 @@ class BackupService
                 . '.' . $exporter->getExtension();
 
             $disk = Storage::disk($this->disk);
+
             $path = $disk->path("{$this->directory}/{$filename}");
 
             $disk->makeDirectory($this->directory);
@@ -104,16 +100,15 @@ class BackupService
             $data = $modelExporter->get();
 
             if (empty($data)) {
-                throw new \RuntimeException("لم يتم العثور على بيانات مطابقة للفلاتر المحددة.");
+                return false;
             }
 
             $exporter->setData($data)->export($path);
-            dd($data);
-            if ($this->deleteAfterBackup) {
-                // $modelExporter->deleteAfterFetch()->get();
 
-                // ($this->modelClass)::whereIn("id", array_column($data, 'id'))->delete();
-            }
+            $disk->put("delete/" . "d-" . rand(100, 9999) . ".json", json_encode([
+                "model" => $this->modelClass,
+                "ids" => array_column($data, 'id')
+            ]));
 
             return $path;
         });

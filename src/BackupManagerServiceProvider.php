@@ -3,6 +3,7 @@
 namespace DuyunApp\DuyunBackupManager;
 
 use DuyunApp\DuyunBackupManager\BackupService;
+use DuyunApp\DuyunBackupManager\Console\CleanOldBackupsCommand;
 use Illuminate\Support\ServiceProvider;
 
 class BackupManagerServiceProvider extends ServiceProvider
@@ -16,6 +17,9 @@ class BackupManagerServiceProvider extends ServiceProvider
             __DIR__ . '/config/duyun-backup.php',
             'duyun-backup'
         );
+        $this->commands([
+            CleanOldBackupsCommand::class,
+        ]);
     }
     public function boot(): void
     {
