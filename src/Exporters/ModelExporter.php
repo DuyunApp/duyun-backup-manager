@@ -50,14 +50,25 @@ class ModelExporter
     }
 
 
-    private function dotMergeData(array $data, array $attrs): array
+    private function dotMerge(array $data, array $attrs): array
     {
         foreach ($data as &$record) {
-            foreach ($attrs as $v) {
-                $value = data_get($record, $v);
-                $parts = explode('.', $v);
-                $key = $parts[count($parts) - 2];
-                $record[$key] = $value;
+            foreach ($attrs as $attr => $label) {
+                $value = $record[__($attr)] ?? data_get($record, $attr);
+
+                if ($value === null || $value === '') {
+                    continue;
+                }
+
+                $decoded = is_string($value) ? json_decode($value, true) : null;
+                if (is_array($decoded)) {
+                    $prefix = $label . '.';
+                    foreach ($decoded as $k => $v) {
+                        $record[__($prefix . $k)] = $v;
+                    }
+                } else {
+                    $record[__($label)] = $value;
+                }
             }
         }
         unset($record);
@@ -75,7 +86,6 @@ class ModelExporter
 
         if (count($this->with) > 0) {
             $query->with($this->with);
-
         }
 
         foreach ($this->filters as $field => $condition) {
@@ -90,7 +100,7 @@ class ModelExporter
         $records = $query->get($this->columns)->toArray();
 
         if (count($this->attrs) > 0) {
-            $records = $this->dotMergeData($records, $this->attrs);
+            $records = $this->dotMerge($records, $this->attrs);
         }
 
         return $records;
